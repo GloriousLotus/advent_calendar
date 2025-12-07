@@ -1,5 +1,5 @@
 import sys
-from func import next_head,prev_head,next_rep,prev_rep
+from func import geq_pattern_2,leq_pattern_2,geq_invalid_pattern,leq_invalid_pattern
 #READING DATA
 fname = sys.argv[1]
 
@@ -10,40 +10,35 @@ ids_range = list(
     map(lambda x:[_ for _ in x.split("-")],
         ids_range_str))
 #part 1
-
 S = 0
-for product_range in ids_range:
-    left, right = product_range
-    head_left = int(next_head(left))
-    if int(str(head_left)+str(head_left))>=int(right):
-        continue
-    head_right = int(prev_head(right))
-    for i in range(head_left,head_right+1):
-        invalid_id = str(i)+str(i)
-        S = S + int(invalid_id)
 
-print(f"Part one:{S}")
+for product_range in ids_range:
+    min_id, max_id = product_range
+    min_pattern = int(geq_pattern_2(min_id))
+    if int(str(min_pattern)*2)>=int(max_id):
+        continue
+    max_pattern = int(leq_pattern_2(max_id))
+    for i in range(min_pattern,max_pattern+1):
+        i_id = str(i)*2
+        S = S + int(i_id)
+
+print(f"Part one: {S}")
 
 
 #part 2
-S=0
-invalid_ids = set()
+invalid_ids = set() #we use a set to eliminate duplicates, e.g. 1111 = 11+11 and 1111 = 1+1+1+1
+
 for product_range in ids_range:
-    left,right = product_range
-    for num_slices in range(2,len(right)+1):
-        max_pattern = prev_rep(right,num_slices)
-        min_pattern = next_rep(left,num_slices)
-        if int(min_pattern)>int(max_pattern):
+    min_id,max_id = product_range
+    for num_slices in range(2,len(max_id)+1):
+        min_pattern = geq_invalid_pattern(min_id,num_slices) #the smallest invalid pattern such that pattern*num_slices >= min_id
+        max_pattern = leq_invalid_pattern(max_id,num_slices) #the largest invalid pattern such that pattern*num_slices <= max_id
+        if int(min_pattern)>int(max_pattern): #no invalid ids in range
             continue
-        print(num_slices,left,min_pattern*num_slices,max_pattern*num_slices,right)
         for pat in range(int(min_pattern),int(max_pattern)+1):
-            patterned_str=str(pat)*num_slices
-            invalid_ids.add(patterned_str)
+            i_id=str(pat)*num_slices
+            invalid_ids.add(i_id)
 
-L = [int(_) for _ in invalid_ids]
-L.sort()
-print(L)
-
-S = sum(L)
+S = sum([int(_) for _ in invalid_ids])
 
 print(f"Part two: {S}")
