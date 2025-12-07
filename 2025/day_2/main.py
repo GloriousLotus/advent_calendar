@@ -1,32 +1,30 @@
-from functools import reduce
-from functions import Str_d, all_invalid_ids, is_invalid_id, slices_length, sum_ids, twins_between
-
-import logging
-main_logger = logging.getLogger(__name__)
-main_logger.setLevel(logging.INFO)
-
-fname = "input.txt"
+import sys
+from func import next_head,prev_head
+#READING DATA
+fname = sys.argv[1]
 
 with open(fname) as f:
     ids_range_str = f.read().split(",")
 
-ids_range = list(map(lambda x:[_ for _ in x.split("-")],ids_range_str))
+ids_range = list(
+    map(lambda x:[_ for _ in x.split("-")],
+        ids_range_str))
 #part 1
 
 S = 0
-for C in ids_range:
-    x = Str_d(C[0])
-    y = Str_d(C[1])
-    S = S + sum_ids(x,y)
+for product_range in ids_range:
+    print(product_range)
+    left, right = product_range
+    head_left = int(next_head(left))
+    if int(str(head_left)+str(head_left))>=int(right):
+        continue
+    head_right = int(prev_head(right))
+    for i in range(head_left,head_right+1):
+        invalid_id = str(i)+str(i)
+        S = S + int(invalid_id)
 
-print(S)
+print(f"Part one:{S}")
+
 
 #part 2
 invalid_ids = set()
-
-for id_start,id_stop in ids_range:
-    invalid_ids = invalid_ids.union(all_invalid_ids(id_start,id_stop))
-
-S2 = sum(invalid_ids)
-
-print(S2)
