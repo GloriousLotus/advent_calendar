@@ -1,42 +1,67 @@
 from functools import reduce
+import sys
+from typing import NamedTuple
 
-#reading data
-ingredients = list()
-messy_inventory = []
-fname = "example.txt"
-with open(fname,"r") as f:
+
+class IntervalID(NamedTuple):
+    low: int
+    high: int
+
+    def has(self, x):
+        return self.low <= x <= self.high
+
+    def is_disjoint(self, other: "IntervalID") -> bool:
+        return other.low > self.high or self.low > other.high
+
+    def width(self):
+        return self.high - self.low + 1
+
+
+# READING DATA
+
+fname = sys.argv[1]
+FRESH_INVENTORY: list[IntervalID] = []
+INGREDIENTS: list[int] = list()
+
+with open(fname, "r") as f:
     for line in f.readlines():
         if line.strip().isdigit():
-            ingredients.append(int(line.strip()))
+            INGREDIENTS.append(int(line.strip()))
         if line.count("-") > 0:
-            messy_inventory.append([int(_) for _ in line.split("-")])
+            r = [int(_) for _ in line.split("-")]
+            FRESH_INVENTORY.append(IntervalID(low=r[0], high=r[1]))
 
-ingredients.sort() #probably optimize part 1 ?
-messy_inventory.sort() #sort with lex order (useful for part 1 and 2)
+INGREDIENTS.sort()  # probably optimize part 1 ?
+# sort with lex order (useful for part 1 and 2)
+FRESH_INVENTORY.sort(key=lambda l: l.low)
 
-#PART 1 : fresh ingredients
+# PART 1 : fresh ingredients
 amount_fresh = 0
-for ig in ingredients:
-    for R in messy_inventory:
-        if R[0]<=ig and ig<=R[1]:
-            amount_fresh = amount_fresh+1
+for ing in INGREDIENTS:
+    for range_inv in FRESH_INVENTORY:
+        if range_inv.has(ing):
+            amount_fresh = amount_fresh + 1
             break
 
 print(f"Part One:{amount_fresh}")
 
-#PART 2 : optimize inventory to have only disjoint ranges
-#remember, inventory is sorted
-cur_R = messy_inventory[0]
-optimized_inventory = list()
-for next_R in messy_inventory:
-    if next_R[0]>cur_R[1]:#disjoint
-        optimized_inventory.append(cur_R)
-        cur_R = next_R
-    else:#overlap
-        if (next_R[0]==cur_R[0]) or (next_R[0]>cur_R[0] and next_R[1]>=cur_R[0]):#prev_R included in R
-            cur_R = [cur_R[0],max(cur_R[1],next_R[1])] # we merge by extending the range to the max
-optimized_inventory.append(cur_R) #at the end of the loop, prev_R contains the last maximal disjoint interval
+# PART 2 : optimize inventory to have only disjoint ranges
+# remember, inventory is already sorted by lex order
+prev = FRESH_INVENTORY[0]
+disjointed_inventory: list[IntervalID] = list()
+for cur in FRESH_INVENTORY:
+    if cur.is_disjoint(prev):  # if disjoint, just add it to the list and go next
+        disjointed_inventory.append(prev)
+        prev = cur
+    else:
+        # since prev <= cur for lex order must overlap like
+        # [prev.low----[cur.low-----cur.high]---prev.high],
+        # or [prev.low----[cur.low-----prev.high]---cur.high],
+        # we merge them -> [prev.low ---- max(prev.high,cur.high)]
+        prev = IntervalID(low=prev.low, high=max(prev.high, cur.high))
+# at the end of the loop, prev contains the last maximal disjoint interval that we haven’t yet used
+disjointed_inventory.append(prev)
 
-#compute inventory size
-inventory_size = reduce(lambda acc,R:acc+R[1]-R[0]+1,optimized_inventory,0)
+# compute inventory size
+inventory_size = reduce(lambda acc, R: acc + R.width(), disjointed_inventory, 0)
 print(f"Part Two:{inventory_size}")
